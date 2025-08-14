@@ -205,7 +205,7 @@ body {
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-  min-width: 600px; /* Ensures table doesn't get too narrow */
+  min-width: 600px; 
 }
 .questions-table th,
 .questions-table td {
@@ -390,4 +390,32 @@ body {
   .save-button, .cancel-button {
     width: 100%;
   }
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 20px; 
+}
+
+.search-bar {
+  flex: 1;
+  max-width: 500px; 
+}
+
+.add-question-btn {
+  white-space: nowrap;
+  padding: 8px 16px;
+  border-radius: 4px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.add-question-btn:hover {
+  background-color: #45a049;
 }

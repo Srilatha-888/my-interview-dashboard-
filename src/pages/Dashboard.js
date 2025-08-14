@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { 
-  deleteQuestion, 
-  setSearch, 
-  editQuestion,
-  addQuestion
+  removeQuestion, 
+  setSearchTerm, 
+  updateQuestion, 
+  addNewQuestion, 
+  fetchQuestions, 
+  selectFilteredQuestions 
 } from '../features/questions/questionsSlice';
 import Sidebar from '../components/Layout/Sidebar';
 import Header from '../components/Layout/Header';
@@ -12,15 +14,15 @@ import '../App.css';
 
 const Dashboard = () => {
   const dispatch = useDispatch();
-  const { list, search } = useSelector(state => state.questions);
-
+  const filteredQuestions = useSelector(selectFilteredQuestions);
+  const status = useSelector((state) => state.questions.status);
   const [editingQuestion, setEditingQuestion] = useState(null);
   const [editForm, setEditForm] = useState({
     title: '',
     tags: '',
     difficulty: 'Easy'
   });
-  
+
   const [showAddModal, setShowAddModal] = useState(false);
   const [newQuestion, setNewQuestion] = useState({
     title: '',
@@ -28,27 +30,32 @@ const Dashboard = () => {
     difficulty: 'Easy'
   });
 
-  const filtered = list.filter(q => 
-    q.title.toLowerCase().includes(search.toLowerCase())
-  );
+  useEffect(() => {
+    if (status === 'idle') {
+      dispatch(fetchQuestions());
+    }
+  }, [status, dispatch]);
 
   const handleDelete = (id) => {
-    dispatch(deleteQuestion(id));
+    dispatch(removeQuestion(id));
   };
 
   const handleEdit = (question) => {
     setEditingQuestion(question);
+    const tagsArray = Array.isArray(question.tags) ? question.tags : question.tags ? question.tags.split(',') : [];
+  
     setEditForm({
       title: question.title,
-      tags: question.tags.join(', '),
+      tags: tagsArray.join(', '),
       difficulty: question.difficulty
     });
   };
+  
 
   const handleEditSubmit = (e) => {
     e.preventDefault();
     if (editingQuestion) {
-      dispatch(editQuestion({
+      dispatch(updateQuestion({
         id: editingQuestion.id,
         title: editForm.title,
         tags: editForm.tags.split(',').map(tag => tag.trim()),
@@ -69,7 +76,7 @@ const Dashboard = () => {
   const handleAddQuestion = (e) => {
     e.preventDefault();
     if (newQuestion.title.trim()) {
-      dispatch(addQuestion({
+      dispatch(addNewQuestion({
         id: Date.now().toString(),
         title: newQuestion.title,
         tags: newQuestion.tags.split(',').map(tag => tag.trim()),
@@ -89,22 +96,53 @@ const Dashboard = () => {
       <Sidebar />
       <div className="content">
         <Header title="Interview Questions" />
-        <div className="dashboard-actions">
-          <input
-            type="text"
-            placeholder="Search question title..."
-            value={search}
-            onChange={(e) => dispatch(setSearch(e.target.value))}
-            className="search-input"
-          />
-           <button 
-            className="add-question-btn"
-            onClick={() => setShowAddModal(true)}
-          >
-            Add 
-          </button>
-        </div>
-        
+        <div 
+  className="dashboard-actions" 
+  style={{
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    width: '100%',
+    marginBottom: '1rem'
+  }}
+>
+  <input
+    type="text"
+    placeholder="Search by question title..."
+    onChange={(e) => dispatch(setSearchTerm(e.target.value))}
+    style={{
+      flex: 1,
+      minWidth: 0,
+      padding: '0.6rem 1rem',
+      fontSize: '14px',
+      border: '1px solid #ccc',
+      borderRadius: '8px',
+      outline: 'none',
+      transition: 'border-color 0.2s ease',
+    }}
+    onFocus={(e) => e.target.style.borderColor = '#4a90e2'}
+    onBlur={(e) => e.target.style.borderColor = '#ccc'}
+  />
+  <button 
+    onClick={() => setShowAddModal(true)}
+    style={{
+      backgroundColor: '#4a90e2',
+      color: '#fff',
+      padding: '0.6rem 1rem',
+      border: 'none',
+      borderRadius: '8px',
+      fontSize: '14px',
+      cursor: 'pointer',
+      whiteSpace: 'nowrap',
+      transition: 'background-color 0.2s ease',
+    }}
+    onMouseOver={(e) => e.target.style.backgroundColor = '#357ab8'}
+    onMouseOut={(e) => e.target.style.backgroundColor = '#4a90e2'}
+  >
+    Add
+  </button>
+</div>
+
         <div className="questions-table-container">
           <table className="questions-table">
             <thead>
@@ -116,41 +154,48 @@ const Dashboard = () => {
               </tr>
             </thead>
             <tbody>
-              {filtered.map(q => (
-                <tr key={q.id} className="question-row">
-                  <td data-label="Title">{q.title}</td>
-                  <td data-label="Tags">
-                    <div className="tags-container">
-                      {q.tags.map((tag, index) => (
-                        <span key={index} className="tag">{tag}</span>
-                      ))}
-                    </div>
-                  </td>
-                  <td data-label="Difficulty">
-                    <span className={`difficulty difficulty-${q.difficulty.toLowerCase()}`}>
-                      {q.difficulty}
-                    </span>
-                  </td>
-                  <td data-label="Actions" className="actions">
-                    <button 
-                      className="edit-btn"
-                      onClick={() => handleEdit(q)}
-                    >
-                      Edit
-                    </button>
-                    <button 
-                      className="delete-btn"
-                      onClick={() => handleDelete(q.id)}
-                    >
-                      Delete
-                    </button>
+              {filteredQuestions.length > 0 ? (
+                filteredQuestions.map(q => (
+                  <tr key={q.id} className="question-row">
+                    <td data-label="Title">{q.title}</td>
+                    <td data-label="Tags">
+                      <div className="tags-container">
+                        {(Array.isArray(q.tags) ? q.tags : q.tags.split(',')).map((tag, index) => (
+                          <span key={index} className="tag">{tag.trim()}</span>
+                        ))}
+                      </div>
+                    </td>
+                    <td data-label="Difficulty">
+                      <span className={`difficulty difficulty-${q.difficulty.toLowerCase()}`}>
+                        {q.difficulty}
+                      </span>
+                    </td>
+                    <td data-label="Actions" className="actions">
+                      <button 
+                        className="edit-btn"
+                        onClick={() => handleEdit(q)}
+                      >
+                        Edit
+                      </button>
+                      <button 
+                        className="delete-btn"
+                        onClick={() => handleDelete(q.id)}
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="4" style={{ textAlign: 'center', padding: '1rem' }}>
+                    No matching questions found.
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
-
         {showAddModal && (
           <div className="modal-overlay">
             <div className="modal">
