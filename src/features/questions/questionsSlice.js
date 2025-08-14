@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+
 const fetchQuestionsAPI = async () => {
   return new Promise((resolve) => {
     setTimeout(() => {
@@ -28,6 +29,7 @@ const fetchQuestionsAPI = async () => {
     }, 500);
   });
 };
+
 export const fetchQuestions = createAsyncThunk(
   'questions/fetchQuestions',
   async () => {
@@ -74,7 +76,7 @@ export const removeQuestion = createAsyncThunk(
 
 const initialState = {
   questions: [],
-  status: 'idle',
+  status: 'idle', 
   error: null,
   searchTerm: ''
 };
@@ -105,15 +107,18 @@ const questionsSlice = createSlice({
         state.status = 'failed';
         state.error = action.error.message;
       })
+      
       .addCase(addNewQuestion.fulfilled, (state, action) => {
         state.questions.unshift(action.payload);
       })
+      
       .addCase(updateQuestion.fulfilled, (state, action) => {
         const index = state.questions.findIndex(q => q.id === action.payload.id);
         if (index !== -1) {
           state.questions[index] = action.payload;
         }
       })
+    
       .addCase(removeQuestion.fulfilled, (state, action) => {
         state.questions = state.questions.filter(q => q.id !== action.payload);
       });
